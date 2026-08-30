@@ -19,10 +19,10 @@
             <flux:label badge="فارسی" class="text-xs font-light!">{{ __('نام') }}</flux:label>
 
             <flux:input wire:model="first_name_fa" type="text" inputmode="text" required autofocus
-                input:class="text-center py-6 font-semibold text-base!" maxlength="40"
+                input:class="text-center py-6 font-semibold text-base!" maxlength="30"
             />
 
-            <flux:error name="first_name_fa" class="-mt-2! text-xs"/>
+            <flux:error name="first_name_fa" class="-mt-2! text-xs font-light!"/>
         </flux:field>
 
         {{-- نام خانوادگی --}}
@@ -30,10 +30,10 @@
             <flux:label badge="فارسی" class="text-xs font-light!">{{ __('نام خانوادگی') }}</flux:label>
 
             <flux:input wire:model="last_name_fa" type="text" inputmode="text" required
-                input:class="text-center py-6 font-semibold text-base!" maxlength="50"
+                input:class="text-center py-6 font-semibold text-base!" maxlength="40"
             />
 
-            <flux:error name="last_name_fa" class="-mt-2! text-xs"/>
+            <flux:error name="last_name_fa" class="-mt-2! text-xs font-light!"/>
         </flux:field>
 
         {{-- نوع تابعیت --}}
@@ -43,7 +43,7 @@
             @endforeach
         </flux:radio.group>
 
-        <flux:error name="nationality_type" class="-mt-5!"/>
+        <flux:error name="nationality_type" class="-mt-5! text-xs font-light!"/>
 
         {{-- شناسه --}}
         <flux:field>
@@ -54,19 +54,19 @@
                         input:class="text-center pt-6.5 pb-5.5 tracking-widest font-semibold text-lg!"
             />
 
-            <flux:error name="identity" class="-mt-2! text-xs"/>
+            <flux:error name="identity" class="-mt-2! text-xs font-light!"/>
         </flux:field>
 
 
         {{-- موبایل --}}
         <flux:field>
-            <flux:label badge="پیامک به این شماره ارسال می گردد." class="text-xs font-light!">{{ __('شماره موبایل') }}</flux:label>
+            <flux:label badge="کد پیامکی به این شماره ارسال می گردد." class="text-xs font-light!">{{ __('شماره موبایل') }}</flux:label>
 
             <flux:input wire:model="mobile" type="text" inputmode="numeric" dir="ltr" maxlength="11" required
                 input:class="text-center pt-6.5 pb-5.5 tracking-widest font-semibold text-lg!"
             />
 
-            <flux:error name="mobile" class="-mt-2! text-xs"/>
+            <flux:error name="mobile" class="-mt-2! text-xs font-light!"/>
         </flux:field>
 
 

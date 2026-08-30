@@ -60,8 +60,8 @@ class extends Component
     protected function rules(): array
     {
         return [
-            'first_name_fa' => ['bail', 'required', 'string', 'min:2', 'max:40', new PersianName],
-            'last_name_fa' => ['bail', 'required', 'string', 'min:2', 'max:50', new PersianName],
+            'first_name_fa' => ['bail', 'required', 'string', 'min:2', 'max:30', new PersianName],
+            'last_name_fa' => ['bail', 'required', 'string', 'min:2', 'max:40', new PersianName],
             'nationality_type' => ['required', Rule::enum(NationalityType::class)],
             'identity' => ['bail', 'required', 'string',
                 Rule::when(
