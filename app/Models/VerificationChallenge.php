@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\NationalityType;
 use App\Enums\VerificationPurpose;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 class VerificationChallenge extends Model
@@ -14,11 +15,16 @@ class VerificationChallenge extends Model
         'nationality_type',
         'identity',
         'mobile',
+
         'purpose',
+
         'verification_code',
+
         'fingerprint',
         'ip',
+
         'attempts',
+
         'expires_at',
         'verified_at',
     ];
@@ -26,11 +32,20 @@ class VerificationChallenge extends Model
     protected function casts(): array
     {
         return [
-            'nationality_type' => NationalityType::class,
             'purpose' => VerificationPurpose::class,
+            'nationality_type' => NationalityType::class,
+
             'attempts' => 'integer',
+
             'expires_at' => 'datetime',
             'verified_at' => 'datetime',
         ];
+    }
+
+    public function scopeActive(Builder $query): Builder
+    {
+        return $query
+            ->whereNull('verified_at')
+            ->where('expires_at', '>', now());
     }
 }

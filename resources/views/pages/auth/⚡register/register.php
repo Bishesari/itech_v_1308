@@ -1,9 +1,11 @@
 <?php
 
 use App\Enums\NationalityType;
+use App\Enums\VerificationPurpose;
 use App\Rules\NationalCode;
 use App\Rules\NotIranianNationalCode;
 use App\Rules\PersianName;
+use App\Services\Verification\VerificationChallengeService;
 use App\Support\Digits;
 use App\Support\PersianText;
 use Illuminate\Validation\Rule;
@@ -26,28 +28,34 @@ class extends Component
 
     public string $mobile = '';
 
-    // نگاشت نام فیلد → تابع نرمال‌ساز
+    public string $otp = '';
+
+    public ?string $otp_expires_at = null;
+
     protected array $normalizers = [
         'first_name_fa' => [PersianText::class, 'name'],
         'last_name_fa' => [PersianText::class, 'name'],
         'identity' => [Digits::class, 'onlyDigits'],
         'mobile' => [Digits::class, 'onlyDigits'],
+        'otp' => [Digits::class, 'onlyDigits'],
     ];
 
-    // متد عمومی Livewire برای هر تغییر
     public function updated($property): void
     {
         $this->normalizeField($property);
     }
-    // نرمال‌سازی یک فیلد مشخص
+
     protected function normalizeField(string $field): void
     {
         if (! isset($this->normalizers[$field])) {
             return;
         }
+
         $callable = $this->normalizers[$field];
+
         $value = (string) ($this->$field ?? '');
-        $this->$field = (string) $callable($value); // cast نهایی
+
+        $this->$field = (string) $callable($value);
     }
 
     public function normalizeAll(): void
@@ -60,24 +68,78 @@ class extends Component
     protected function rules(): array
     {
         return [
-            'first_name_fa' => ['bail', 'required', 'string', 'min:2', 'max:30', new PersianName],
-            'last_name_fa' => ['bail', 'required', 'string', 'min:2', 'max:40', new PersianName],
-            'nationality_type' => ['required', Rule::enum(NationalityType::class)],
-            'identity' => ['bail', 'required', 'string',
+            'first_name_fa' => [
+                'bail',
+                'required',
+                'string',
+                'min:2',
+                'max:30',
+                new PersianName,
+            ],
+
+            'last_name_fa' => [
+                'bail',
+                'required',
+                'string',
+                'min:2',
+                'max:40',
+                new PersianName,
+            ],
+
+            'nationality_type' => [
+                'required',
+                Rule::enum(NationalityType::class),
+            ],
+
+            'identity' => [
+                'bail',
+                'required',
+                'string',
+
                 Rule::when(
                     $this->nationality_type === NationalityType::Iranian,
-                    ['digits:10', new NationalCode],
-                    ['digits_between:6,20', new NotIranianNationalCode],
+                    [
+                        'digits:10',
+                        new NationalCode,
+                    ],
+                    [
+                        'digits_between:6,20',
+                        new NotIranianNationalCode,
+                    ],
                 ),
+
                 'unique:people,identity',
             ],
-            'mobile' => ['bail', 'required', 'digits:11', 'starts_with:09'],
+
+            'mobile' => [
+                'bail',
+                'required',
+                'digits:11',
+                'starts_with:09',
+            ],
         ];
     }
-    public function continueRegister(): void
-    {
+
+    public function continueRegister(
+        VerificationChallengeService $service
+    ): void {
         $this->normalizeAll();
+
         $this->validate();
 
+        $challenge = $service->send(
+            purpose: VerificationPurpose::Registration,
+            firstNameFa: $this->first_name_fa,
+            lastNameFa: $this->last_name_fa,
+            nationalityType: $this->nationality_type,
+            identity: $this->identity,
+            mobile: $this->mobile,
+            fingerprint: null,
+            ip: request()->ip(),
+        );
+
+        $this->otp_expires_at = $challenge->expires_at->toISOString();
+
+        $this->modal('verify-otp')->show();
     }
 };

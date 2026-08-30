@@ -102,208 +102,139 @@
         </flux:link>
     </div>
 
+    {{-------------------------- OTP VERIFY Modal --------------------------}}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    {{-- OTP Verification Modal --}}
     <flux:modal
-        name="verify-otp111"
+        name="verify-otp"
         class="md:w-96"
         :dismissible="false"
         focusable
     >
-        <div
-            x-data="{
-            resendAvailableAt: $wire.entangle('resendAvailableAt'),
-            remaining: 0,
-            timer: null,
-
-            init() {
-                this.startCooldown();
-
-                this.$watch('resendAvailableAt', () => {
-                    this.startCooldown();
-                });
-            },
-
-            startCooldown() {
-                this.updateRemaining();
-
-                this.stopTimer();
-
-                if (this.remaining > 0) {
-                    this.timer = setInterval(() => {
-                        this.updateRemaining();
-                    }, 1000);
-                }
-            },
-
-            updateRemaining() {
-                if (!this.resendAvailableAt) {
-                    this.remaining = 0;
-                    return;
-                }
-
-                const target = new Date(this.resendAvailableAt).getTime();
-                const now = Date.now();
-
-                this.remaining = Math.max(
-                    0,
-                    Math.ceil((target - now) / 1000)
-                );
-
-                if (this.remaining === 0) {
-                    this.stopTimer();
-                }
-            },
-
-            stopTimer() {
-                if (this.timer !== null) {
-                    clearInterval(this.timer);
-                    this.timer = null;
-                }
-            },
-
-            get canResend() {
-                return this.remaining === 0;
-            },
-
-            formatRemaining() {
-                const minutes = Math.floor(this.remaining / 60);
-                const seconds = this.remaining % 60;
-
-                return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-            },
-        }"
-            x-init="init()"
-            class="space-y-6"
+        <form
+            wire:submit="verify_otp"
+            class="space-y-8"
+            autocomplete="off"
         >
 
-            <form wire:submit="verifyOtp" class="space-y-6">
+            <div class="max-w-72 mx-auto space-y-2">
+                <flux:heading size="lg" class="text-center">
+                    {{ __('تایید کد پیامکی') }}
+                </flux:heading>
 
-                {{-- Header --}}
-                <div class="max-w-72 mx-auto space-y-2">
-                    <flux:heading size="lg" class="text-center">
-                        {{ __('تأیید شماره موبایل') }}
-                    </flux:heading>
+                <flux:text class="text-center">
+                    {{ __('کد پیامک شده را وارد کنید.') }}
+                </flux:text>
+            </div>
 
-                    <flux:text class="text-center">
-                        {{ __('کد تأیید ارسال‌شده به شماره موبایل خود را وارد کنید.') }}
-                    </flux:text>
-                </div>
+            <flux:otp
+                wire:model="otp"
+                id="otp-input-wrapper"
+                submit="auto"
+                :error:icon="false"
+                error:class="text-center"
+                class="mx-auto"
+                dir="ltr"
+            >
+                <flux:otp.input autofocus />
+                <flux:otp.input />
+                <flux:otp.input />
 
+                <flux:otp.separator />
 
-                {{-- OTP --}}
-                <flux:otp
-                    wire:model="otp"
-                    id="otp-input-wrapper"
-                    :error:icon="false"
-                    error:class="text-center"
-                    class="mx-auto"
-                    dir="ltr"
-                >
-                    <flux:otp.input autofocus />
-                    <flux:otp.input />
-                    <flux:otp.input />
+                <flux:otp.input />
+                <flux:otp.input />
+                <flux:otp.input />
+            </flux:otp>
 
-                    <flux:otp.separator />
+            <div
+                x-data="{
+                expiresAt: $wire.entangle('otp_expires_at'),
 
-                    <flux:otp.input />
-                    <flux:otp.input />
-                    <flux:otp.input />
-                </flux:otp>
-                <flux:error
-                    name="otp"
-                    class="-mt-2! text-xs"
-                />
+                remaining: 0,
 
+                timer: null,
 
-                {{-- Verify --}}
-                <flux:button
-                    type="submit"
-                    variant="primary"
-                    color="teal"
-                    class="w-full cursor-pointer"
-                    wire:loading.attr="disabled"
-                    wire:target="verifyOtp"
-                >
-                <span
-                    wire:loading.remove
-                    wire:target="verifyOtp"
-                >
-                    {{ __('تأیید و ادامه') }}
-                </span>
+                start() {
+                    this.update();
 
-                    <span
-                        wire:loading
-                        wire:target="verifyOtp"
-                    >
-                    {{ __('در حال بررسی...') }}
-                </span>
-                </flux:button>
+                    clearInterval(this.timer);
 
-            </form>
+                    this.timer = setInterval(() => {
+                        this.update();
+                    }, 1000);
+                },
 
+                update() {
+                    if (!this.expiresAt) {
+                        this.remaining = 0;
+                        return;
+                    }
 
-            {{-- Resend --}}
-            <div class="text-center">
+                    this.remaining = Math.max(
+                        0,
+                        Math.ceil(
+                            (
+                                new Date(this.expiresAt).getTime()
+                                - Date.now()
+                            ) / 1000
+                        )
+                    );
 
-                <button
-                    type="button"
-                    class="text-sm cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
-                    wire:click="resendOtp"
-                    wire:loading.attr="disabled"
-                    wire:target="resendOtp"
-                    :disabled="!canResend"
-                >
-                <span
-                    wire:loading.remove
-                    wire:target="resendOtp"
-                >
-                    <template x-if="!canResend">
-                        <span>
-                            {{ __('ارسال مجدد') }}
-                            (<span x-text="formatRemaining()"></span>)
-                        </span>
+                    if (this.remaining === 0) {
+                        clearInterval(this.timer);
+                    }
+                },
+
+                get minutes() {
+                    return String(
+                        Math.floor(this.remaining / 60)
+                    ).padStart(2, '0');
+                },
+
+                get seconds() {
+                    return String(
+                        this.remaining % 60
+                    ).padStart(2, '0');
+                }
+            }"
+                x-init="$watch('expiresAt', () => start())"
+            >
+
+                <div class="space-y-4">
+
+                    {{-- Countdown --}}
+                    <template x-if="remaining > 0">
+                        <flux:button
+                            type="button"
+                            class="w-full"
+                            disabled
+                        >
+                        <span
+                            dir="ltr"
+                            class="tabular-nums"
+                            x-text="`${minutes} : ${seconds}`"></span>
+                            {{ __(' تا ارسال مجدد') }}
+                        </flux:button>
                     </template>
 
-                    <template x-if="canResend">
-                        <span>
+                    {{-- Resend --}}
+                    <template x-if="remaining === 0">
+                        <flux:button
+                            type="button"
+                            wire:click="otp_send"
+                            variant="primary"
+                            color="teal"
+                            class="w-full cursor-pointer"
+                        >
                             {{ __('ارسال مجدد کد') }}
-                        </span>
+                        </flux:button>
                     </template>
-                </span>
 
-                    <span
-                        wire:loading
-                        wire:target="resendOtp"
-                    >
-                    {{ __('در حال ارسال...') }}
-                </span>
-                </button>
+                </div>
 
             </div>
 
-        </div>
+        </form>
     </flux:modal>
-
 </div>
 
