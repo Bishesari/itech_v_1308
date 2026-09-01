@@ -127,7 +127,7 @@ class extends Component
 
         $this->validate();
 
-        $challenge = $service->send(
+        $challenge = $service->issue(
             purpose: VerificationPurpose::Registration,
             firstNameFa: $this->first_name_fa,
             lastNameFa: $this->last_name_fa,
@@ -141,5 +141,20 @@ class extends Component
         $this->otp_expires_at = $challenge->expires_at->toISOString();
 
         $this->modal('verify-otp')->show();
+    }
+
+    public function resendOtp(
+        VerificationChallengeService $service
+    ): void {
+        $challenge = $service->resend(
+            purpose: VerificationPurpose::Registration,
+            mobile: $this->mobile,
+            fingerprint: null,
+            ip: request()->ip(),
+        );
+
+        $this->otp = '';
+
+        $this->otp_expires_at = $challenge->expires_at->toISOString();
     }
 };

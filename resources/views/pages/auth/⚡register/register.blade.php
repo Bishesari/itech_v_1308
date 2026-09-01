@@ -199,9 +199,7 @@
             }"
                 x-init="$watch('expiresAt', () => start())"
             >
-
                 <div class="space-y-4">
-
                     {{-- Countdown --}}
                     <template x-if="remaining > 0">
                         <flux:button
@@ -221,7 +219,7 @@
                     <template x-if="remaining === 0">
                         <flux:button
                             type="button"
-                            wire:click="otp_send"
+                            wire:click="resendOtp"
                             variant="primary"
                             color="teal"
                             class="w-full cursor-pointer"
@@ -229,12 +227,8 @@
                             {{ __('ارسال مجدد کد') }}
                         </flux:button>
                     </template>
-
                 </div>
-
             </div>
-
         </form>
     </flux:modal>
 </div>
-

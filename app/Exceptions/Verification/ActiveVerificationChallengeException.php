@@ -2,12 +2,9 @@
 
 namespace App\Exceptions\Verification;
 
-class ActiveVerificationChallengeException extends VerificationException
+use Exception;
+
+class ActiveVerificationChallengeException extends Exception
 {
-    public function __construct()
-    {
-        parent::__construct(
-            'ارسال مجدد کد تا پایان زمان انتظار امکان‌پذیر نیست.'
-        );
-    }
+    protected $message = 'Verification challenge is still active.';
 }
