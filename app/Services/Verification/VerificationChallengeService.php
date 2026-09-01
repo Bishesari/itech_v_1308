@@ -220,4 +220,20 @@ class VerificationChallengeService
         return (string) random_int($min, $max);
     }
 
+    private function ensureCanSendSms(
+        VerificationPurpose $purpose,
+        string $mobile,
+    ): void {
+        $count = VerificationChallenge::query()
+            ->where('purpose', $purpose)
+            ->where('mobile', $mobile)
+            ->whereNotNull('sms_sent_at')
+            ->where('sms_sent_at', '>=', now()->subMinutes(10))
+            ->count();
+
+        if ($count >= 3) {
+            throw new SmsRateLimitException;
+        }
+    }
+
 }

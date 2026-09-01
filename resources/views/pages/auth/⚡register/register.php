@@ -2,6 +2,7 @@
 
 use App\Enums\NationalityType;
 use App\Enums\VerificationPurpose;
+use App\Exceptions\Verification\SmsDeliveryException;
 use App\Rules\NationalCode;
 use App\Rules\NotIranianNationalCode;
 use App\Rules\PersianName;
@@ -127,17 +128,27 @@ class extends Component
 
         $this->validate();
 
-        $challenge = $service->issue(
-            purpose: VerificationPurpose::Registration,
-            firstNameFa: $this->first_name_fa,
-            lastNameFa: $this->last_name_fa,
-            nationalityType: $this->nationality_type,
-            identity: $this->identity,
-            mobile: $this->mobile,
-            fingerprint: null,
-            ip: request()->ip(),
-        );
+        try {
+            $challenge = $service->issue(
+                purpose: VerificationPurpose::Registration,
+                firstNameFa: $this->first_name_fa,
+                lastNameFa: $this->last_name_fa,
+                nationalityType: $this->nationality_type,
+                identity: $this->identity,
+                mobile: $this->mobile,
+                fingerprint: null,
+                ip: request()->ip(),
+            );
+        } catch (SmsDeliveryException) {
+            $this->addError(
+                'verification',
+                'ارسال کد تأیید با مشکل مواجه شد. لطفاً چند لحظه دیگر دوباره تلاش کنید.'
+            );
 
+            return;
+        }
+
+        $this->otp = '';
         $this->otp_expires_at = $challenge->expires_at->toISOString();
 
         $this->modal('verify-otp')->show();
@@ -146,15 +157,25 @@ class extends Component
     public function resendOtp(
         VerificationChallengeService $service
     ): void {
-        $challenge = $service->resend(
-            purpose: VerificationPurpose::Registration,
-            mobile: $this->mobile,
-            fingerprint: null,
-            ip: request()->ip(),
-        );
+        try {
+            $challenge = $service->resend(
+                purpose: VerificationPurpose::Registration,
+                mobile: $this->mobile,
+                fingerprint: null,
+                ip: request()->ip(),
+            );
+        } catch (SmsDeliveryException) {
+            $this->addError(
+                'otp',
+                'ارسال مجدد کد با مشکل مواجه شد. لطفاً دوباره تلاش کنید.'
+            );
+
+            return;
+        }
+
+        $this->resetErrorBag('otp');
 
         $this->otp = '';
-
         $this->otp_expires_at = $challenge->expires_at->toISOString();
     }
 };

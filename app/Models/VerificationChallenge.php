@@ -26,6 +26,7 @@ class VerificationChallenge extends Model
         'attempts',
 
         'expires_at',
+        'sms_sent_at',
         'verified_at',
     ];
 
@@ -38,6 +39,7 @@ class VerificationChallenge extends Model
             'attempts' => 'integer',
 
             'expires_at' => 'datetime',
+            'sms_sent_at' => 'datetime',
             'verified_at' => 'datetime',
         ];
     }

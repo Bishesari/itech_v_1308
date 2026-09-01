@@ -70,6 +70,11 @@
         </flux:field>
 
 
+        <flux:error
+            name="verification"
+            class="text-center text-xs font-light!"
+        />
+
         {{-- Submit --}}
         <div class="flex items-center justify-end">
             <flux:button
@@ -227,6 +232,11 @@
                             {{ __('ارسال مجدد کد') }}
                         </flux:button>
                     </template>
+
+                    <flux:error
+                        name="otp"
+                        class="text-center text-xs font-light!"
+                    />
                 </div>
             </div>
         </form>

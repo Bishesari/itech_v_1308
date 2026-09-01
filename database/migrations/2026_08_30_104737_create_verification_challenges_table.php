@@ -31,6 +31,7 @@ return new class extends Migration
             $table->unsignedTinyInteger('attempts')->default(0);
 
             $table->timestamp('expires_at');
+            $table->timestamp('sms_sent_at')->nullable();
             $table->timestamp('verified_at')->nullable();
 
             $table->timestamp('created_at')->useCurrent();
