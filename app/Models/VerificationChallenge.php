@@ -5,10 +5,12 @@ namespace App\Models;
 use App\Enums\NationalityType;
 use App\Enums\VerificationPurpose;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class VerificationChallenge extends Model
 {
+    use HasFactory;
     protected $fillable = [
         'first_name_fa',
         'last_name_fa',

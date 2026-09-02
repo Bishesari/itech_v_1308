@@ -1,13 +1,23 @@
 <div class="flex flex-col gap-6"
-     x-data="{nationalityType: $wire.entangle('nationality_type'), get identityLabel() {
-            return this.nationalityType == 1
-                ? 'کد ملی'
-                : 'شناسه اختصاصی';
-        },
-        get identityMaxLength() {
-            return this.nationalityType == 1 ? 10 : 20;
-        }
-    }"
+     x-data="{
+    fingerprint: $wire.entangle('fingerprint'),
+
+    nationalityType: $wire.entangle('nationality_type'),
+
+    async init() {
+        this.fingerprint = await window.getFingerprint();
+    },
+
+    get identityLabel() {
+        return this.nationalityType == 1
+            ? 'کد ملی'
+            : 'شناسه اختصاصی';
+    },
+
+    get identityMaxLength() {
+        return this.nationalityType == 1 ? 10 : 20;
+    }
+}"
 >
     <x-auth-header :title="__('ثبت نام')" :description="__('اطلاعات خواسته شده را کامل کنید.')"/>
 

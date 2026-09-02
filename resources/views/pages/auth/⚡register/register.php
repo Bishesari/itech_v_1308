@@ -30,8 +30,9 @@ class extends Component
     public string $mobile = '';
 
     public string $otp = '';
-
     public ?string $otp_expires_at = null;
+
+    public ?string $fingerprint = null;
 
     protected array $normalizers = [
         'first_name_fa' => [PersianText::class, 'name'],
@@ -124,8 +125,8 @@ class extends Component
     public function continueRegister(
         VerificationChallengeService $service
     ): void {
-        $this->normalizeAll();
 
+        $this->normalizeAll();
         $this->validate();
 
         try {
@@ -136,7 +137,7 @@ class extends Component
                 nationalityType: $this->nationality_type,
                 identity: $this->identity,
                 mobile: $this->mobile,
-                fingerprint: null,
+                fingerprint: $this->fingerprint,
                 ip: request()->ip(),
             );
         } catch (SmsDeliveryException) {
@@ -161,7 +162,7 @@ class extends Component
             $challenge = $service->resend(
                 purpose: VerificationPurpose::Registration,
                 mobile: $this->mobile,
-                fingerprint: null,
+                fingerprint: $this->fingerprint,
                 ip: request()->ip(),
             );
         } catch (SmsDeliveryException) {

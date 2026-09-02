@@ -2,10 +2,12 @@
 
 namespace App\Services\Verification;
 
+use App\Contracts\SmsGateway;
 use App\Enums\NationalityType;
 use App\Enums\VerificationPurpose;
 use App\Exceptions\Verification\ActiveVerificationChallengeException;
 use App\Exceptions\Verification\SmsDeliveryException;
+use App\Exceptions\Verification\SmsRateLimitException;
 use App\Exceptions\Verification\VerificationChallengeNotFoundException;
 use App\Models\VerificationChallenge;
 use Illuminate\Support\Facades\DB;
@@ -18,6 +20,15 @@ class VerificationChallengeService
      * If an active challenge already exists for the mobile/purpose,
      * it will be returned without sending another SMS.
      */
+
+    /**
+     * Send SMS through the configured SMS provider.
+     */
+    public function __construct(
+        private readonly SmsGateway $smsGateway,
+    ) {}
+
+
     public function issue(
         VerificationPurpose $purpose,
         string $firstNameFa,
@@ -31,6 +42,9 @@ class VerificationChallengeService
         if ($challenge = $this->findActiveChallenge($purpose, $mobile)) {
             return $challenge;
         }
+        $this->ensureCanSendSms($purpose, $mobile);
+        $this->ensureCanSendByFingerprint($purpose, $fingerprint);
+        $this->ensureCanSendByIp($purpose, $ip);
 
         $challenge = DB::transaction(function () use (
             $purpose,
@@ -84,6 +98,10 @@ class VerificationChallengeService
                 throw new ActiveVerificationChallengeException;
             }
 
+            $this->ensureCanSendSms($purpose, $mobile);
+            $this->ensureCanSendByFingerprint($purpose, $fingerprint);
+            $this->ensureCanSendByIp($purpose, $ip);
+
             $challenge = $this->createChallenge(
                 purpose: $current->purpose,
                 firstNameFa: $current->first_name_fa,
@@ -95,7 +113,6 @@ class VerificationChallengeService
                 ip: $ip,
             );
 
-            $current->delete();
 
             return $challenge;
         });
@@ -172,28 +189,19 @@ class VerificationChallengeService
         VerificationChallenge $challenge,
     ): void {
         try {
-            $this->sendSms(
+            $this->smsGateway->sendOtp(
                 $challenge->mobile,
                 $challenge->verification_code,
             );
-        } catch (\Throwable $e) {
-            $challenge->delete();
 
+            $challenge->update([
+                'sms_sent_at' => now(),
+            ]);
+        } catch (\Throwable $e) {
             throw new SmsDeliveryException(
                 previous: $e,
             );
         }
-    }
-
-    /**
-     * Send SMS through the configured SMS provider.
-     */
-    private function sendSms(
-        string $mobile,
-        string $verificationCode,
-    ): void {
-        // TODO:
-        // SmsService::sendOtp($mobile, $verificationCode);
     }
 
     /**
@@ -220,6 +228,7 @@ class VerificationChallengeService
         return (string) random_int($min, $max);
     }
 
+
     private function ensureCanSendSms(
         VerificationPurpose $purpose,
         string $mobile,
@@ -228,10 +237,66 @@ class VerificationChallengeService
             ->where('purpose', $purpose)
             ->where('mobile', $mobile)
             ->whereNotNull('sms_sent_at')
-            ->where('sms_sent_at', '>=', now()->subMinutes(10))
+            ->where(
+                'sms_sent_at',
+                '>=',
+                now()->subMinutes(
+                    config('verification.otp.send_window')
+                )
+            )
             ->count();
 
-        if ($count >= 3) {
+        if ($count >= config('verification.otp.max_sends')) {
+            throw new SmsRateLimitException;
+        }
+    }
+    private function ensureCanSendByFingerprint(
+        VerificationPurpose $purpose,
+        ?string $fingerprint,
+    ): void {
+        if ($fingerprint === null) {
+            return;
+        }
+
+        $count = VerificationChallenge::query()
+            ->where('purpose', $purpose)
+            ->where('fingerprint', $fingerprint)
+            ->whereNotNull('sms_sent_at')
+            ->where(
+                'sms_sent_at',
+                '>=',
+                now()->subMinutes(
+                    config('verification.otp.fingerprint_send_window')
+                )
+            )
+            ->count();
+
+        if ($count >= config('verification.otp.fingerprint_max_sends')) {
+            throw new SmsRateLimitException;
+        }
+    }
+    private function ensureCanSendByIp(
+        VerificationPurpose $purpose,
+        ?string $ip,
+    ): void {
+        if ($ip === null) {
+            return;
+        }
+
+        $count = VerificationChallenge::query()
+            ->where('purpose', $purpose)
+            ->where('ip', $ip)
+            ->whereNotNull('sms_sent_at')
+            ->where(
+                'sms_sent_at',
+                '>=',
+                now()->subMinutes(
+                    config('verification.otp.ip_send_window')
+                )
+            )
+            ->count();
+
+        if ($count >= config('verification.otp.ip_max_sends')) {
             throw new SmsRateLimitException;
         }
     }
