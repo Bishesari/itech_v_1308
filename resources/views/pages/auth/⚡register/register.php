@@ -2,7 +2,12 @@
 
 use App\Enums\NationalityType;
 use App\Enums\VerificationPurpose;
+use App\Exceptions\Verification\ActiveVerificationChallengeException;
+use App\Exceptions\Verification\ExpiredVerificationChallengeException;
+use App\Exceptions\Verification\InvalidVerificationCodeException;
 use App\Exceptions\Verification\SmsDeliveryException;
+use App\Exceptions\Verification\VerificationAttemptsExceededException;
+use App\Exceptions\Verification\VerificationChallengeNotFoundException;
 use App\Rules\NationalCode;
 use App\Rules\NotIranianNationalCode;
 use App\Rules\PersianName;
@@ -165,12 +170,24 @@ class extends Component
                 fingerprint: $this->fingerprint,
                 ip: request()->ip(),
             );
+        } catch (VerificationChallengeNotFoundException) {
+            $this->addError(
+                'otp',
+                'کد تأیید معتبر یا فعالی برای این شماره وجود ندارد. لطفاً کد جدید درخواست کنید.'
+            );
+            return;
+
+        } catch (ActiveVerificationChallengeException) {
+            $this->addError(
+                'otp',
+                'کد تأیید فعلی هنوز معتبر است.'
+            );
+            return;
         } catch (SmsDeliveryException) {
             $this->addError(
                 'otp',
                 'ارسال مجدد کد با مشکل مواجه شد. لطفاً دوباره تلاش کنید.'
             );
-
             return;
         }
 
@@ -178,5 +195,61 @@ class extends Component
 
         $this->otp = '';
         $this->otp_expires_at = $challenge->expires_at->toISOString();
+    }
+
+    public function verifyOtp(
+        VerificationChallengeService $service
+    ): void {
+        $this->normalizeField('otp');
+
+        $this->validate([
+            'otp' => [
+                'required',
+                'digits:6',
+            ],
+        ]);
+
+        try {
+            $service->verify(
+                purpose: VerificationPurpose::Registration,
+                mobile: $this->mobile,
+                verificationCode: $this->otp,
+            );
+        } catch (InvalidVerificationCodeException) {
+            $this->addError(
+                'otp',
+                'کد تأیید وارد شده صحیح نیست.'
+            );
+
+            return;
+        } catch (ExpiredVerificationChallengeException) {
+            $this->addError(
+                'otp',
+                'کد تأیید منقضی شده است. لطفاً کد جدید درخواست کنید.'
+            );
+
+            return;
+        } catch (VerificationAttemptsExceededException) {
+            $this->addError(
+                'otp',
+                'تعداد تلاش‌های مجاز به پایان رسیده است. لطفاً کد جدید درخواست کنید.'
+            );
+
+            return;
+        } catch (VerificationChallengeNotFoundException) {
+            $this->addError(
+                'otp',
+                'کد تأیید معتبر یا فعالی برای این شماره وجود ندارد. لطفاً کد جدید درخواست کنید.'
+            );
+
+            return;
+        }
+
+
+        $this->resetErrorBag('otp');
+        $this->otp = '';
+        $this->otp_expires_at = null;
+
+        // مرحله ثبت نهایی کاربر بعداً اینجا قرار می‌گیرد.
     }
 };

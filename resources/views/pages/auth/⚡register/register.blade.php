@@ -126,7 +126,7 @@
         focusable
     >
         <form
-            wire:submit="verify_otp"
+            wire:submit="verifyOtp"
             class="space-y-8"
             autocomplete="off"
         >

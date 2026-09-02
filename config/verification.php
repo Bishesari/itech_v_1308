@@ -17,6 +17,7 @@ return [
 
         'ip_max_sends' => 30,
         'ip_send_window' => 10,
+        'max_attempts' => 5,
 
     ],
 

@@ -6,6 +6,7 @@ use App\Contracts\SmsGateway;
 use App\Enums\NationalityType;
 use App\Enums\VerificationPurpose;
 use App\Exceptions\Verification\ActiveVerificationChallengeException;
+use App\Exceptions\Verification\InvalidVerificationCodeException;
 use App\Exceptions\Verification\SmsDeliveryException;
 use App\Exceptions\Verification\SmsRateLimitException;
 use App\Exceptions\Verification\VerificationChallengeNotFoundException;
@@ -313,6 +314,7 @@ class VerificationChallengeServiceTest extends TestCase
 
         $this->assertNotNull($challenge->sms_sent_at);
     }
+
     public function test_blocks_sms_after_six_successful_sends_from_the_same_fingerprint(): void
     {
         $this->mock(SmsGateway::class, function ($mock) {
@@ -325,14 +327,14 @@ class VerificationChallengeServiceTest extends TestCase
         $fingerprint = 'test-fingerprint-123';
 
         for ($i = 0; $i < 6; $i++) {
-            $mobile = '0912000000' . $i;
+            $mobile = '0912000000'.$i;
 
             $service->issue(
                 purpose: VerificationPurpose::Registration,
                 firstNameFa: 'علی',
                 lastNameFa: 'احمدی',
                 nationalityType: NationalityType::Iranian,
-                identity: '001234567' . $i,
+                identity: '001234567'.$i,
                 mobile: $mobile,
                 fingerprint: $fingerprint,
                 ip: '127.0.0.1',
@@ -394,8 +396,8 @@ class VerificationChallengeServiceTest extends TestCase
                 firstNameFa: 'علی',
                 lastNameFa: 'احمدی',
                 nationalityType: NationalityType::Iranian,
-                identity: '00123456' . (80 + $i),
-                mobile: '091200000' . (2 + $i),
+                identity: '00123456'.(80 + $i),
+                mobile: '091200000'.(2 + $i),
                 fingerprint: $fingerprint,
                 ip: '127.0.0.1',
             );
@@ -409,6 +411,7 @@ class VerificationChallengeServiceTest extends TestCase
                 ->count()
         );
     }
+
     public function test_blocks_sms_after_thirty_successful_sends_from_the_same_ip(): void
     {
         $this->mock(SmsGateway::class, function ($mock) {
@@ -426,9 +429,9 @@ class VerificationChallengeServiceTest extends TestCase
                 firstNameFa: 'علی',
                 lastNameFa: 'احمدی',
                 nationalityType: NationalityType::Iranian,
-                identity: '001234' . str_pad((string) $i, 4, '0', STR_PAD_LEFT),
-                mobile: '0912000' . str_pad((string) $i, 4, '0', STR_PAD_LEFT),
-                fingerprint: 'fingerprint-' . $i,
+                identity: '001234'.str_pad((string) $i, 4, '0', STR_PAD_LEFT),
+                mobile: '0912000'.str_pad((string) $i, 4, '0', STR_PAD_LEFT),
+                fingerprint: 'fingerprint-'.$i,
                 ip: $ip,
             );
         }
@@ -446,6 +449,7 @@ class VerificationChallengeServiceTest extends TestCase
             ip: $ip,
         );
     }
+
     public function test_does_not_count_failed_sms_toward_ip_rate_limit(): void
     {
         $this->mock(SmsGateway::class, function ($mock) {
@@ -487,9 +491,9 @@ class VerificationChallengeServiceTest extends TestCase
                 firstNameFa: 'علی',
                 lastNameFa: 'احمدی',
                 nationalityType: NationalityType::Iranian,
-                identity: '001234' . str_pad((string) $i, 4, '0', STR_PAD_LEFT),
-                mobile: '0912001' . str_pad((string) $i, 4, '0', STR_PAD_LEFT),
-                fingerprint: 'fingerprint-' . $i,
+                identity: '001234'.str_pad((string) $i, 4, '0', STR_PAD_LEFT),
+                mobile: '0912001'.str_pad((string) $i, 4, '0', STR_PAD_LEFT),
+                fingerprint: 'fingerprint-'.$i,
                 ip: $ip,
             );
         }
@@ -502,5 +506,199 @@ class VerificationChallengeServiceTest extends TestCase
                 ->count()
         );
     }
-}
 
+    public function test_verify_returns_challenge_when_code_is_correct(): void
+    {
+        $challenge = VerificationChallenge::factory()->create([
+            'purpose' => VerificationPurpose::Registration,
+            'mobile' => '09123456789',
+            'verification_code' => '123456',
+            'expires_at' => now()->addMinutes(2),
+            'attempts' => 0,
+            'verified_at' => null,
+        ]);
+
+        $service = app(VerificationChallengeService::class);
+
+        $result = $service->verify(
+            purpose: VerificationPurpose::Registration,
+            mobile: '09123456789',
+            verificationCode: '123456',
+        );
+
+        $this->assertSame($challenge->id, $result->id);
+
+        $this->assertDatabaseHas('verification_challenges', [
+            'id' => $challenge->id,
+            'attempts' => 0,
+        ]);
+
+        $this->assertNotNull($result->fresh()->verified_at);
+    }
+    public function test_verify_throws_when_code_is_invalid_and_increments_attempts(): void
+    {
+        $challenge = VerificationChallenge::factory()->create([
+            'purpose' => VerificationPurpose::Registration,
+            'mobile' => '09123456789',
+            'verification_code' => '123456',
+            'expires_at' => now()->addMinutes(2),
+            'attempts' => 0,
+            'verified_at' => null,
+        ]);
+
+        $service = app(VerificationChallengeService::class);
+
+        $this->expectException(
+            \App\Exceptions\Verification\InvalidVerificationCodeException::class
+        );
+
+        try {
+            $service->verify(
+                purpose: VerificationPurpose::Registration,
+                mobile: '09123456789',
+                verificationCode: '654321',
+            );
+        } finally {
+            $this->assertDatabaseHas('verification_challenges', [
+                'id' => $challenge->id,
+                'attempts' => 1,
+                'verified_at' => null,
+            ]);
+        }
+    }
+    public function test_verify_throws_when_challenge_is_expired(): void
+    {
+        $challenge = VerificationChallenge::factory()->create([
+            'purpose' => VerificationPurpose::Registration,
+            'mobile' => '09123456789',
+            'verification_code' => '123456',
+            'expires_at' => now()->subMinute(),
+            'attempts' => 0,
+            'verified_at' => null,
+        ]);
+
+        $service = app(VerificationChallengeService::class);
+
+        $this->expectException(
+            \App\Exceptions\Verification\ExpiredVerificationChallengeException::class
+        );
+
+        $service->verify(
+            purpose: VerificationPurpose::Registration,
+            mobile: '09123456789',
+            verificationCode: '123456',
+        );
+    }
+    public function test_verify_throws_when_max_attempts_are_exceeded(): void
+    {
+        $challenge = VerificationChallenge::factory()->create([
+            'purpose' => VerificationPurpose::Registration,
+            'mobile' => '09123456789',
+            'verification_code' => '123456',
+            'expires_at' => now()->addMinutes(2),
+            'attempts' => 5,
+            'verified_at' => null,
+        ]);
+
+        $service = app(VerificationChallengeService::class);
+
+        $this->expectException(
+            \App\Exceptions\Verification\VerificationAttemptsExceededException::class
+        );
+
+        $service->verify(
+            purpose: VerificationPurpose::Registration,
+            mobile: '09123456789',
+            verificationCode: '123456',
+        );
+    }
+    public function test_verify_throws_when_there_is_no_unverified_challenge(): void
+    {
+        $service = app(VerificationChallengeService::class);
+
+        $this->expectException(
+            VerificationChallengeNotFoundException::class
+        );
+
+        $service->verify(
+            purpose: VerificationPurpose::Registration,
+            mobile: '09123456789',
+            verificationCode: '123456',
+        );
+    }
+    public function test_verify_blocks_after_fifth_invalid_code(): void
+    {
+        $challenge = VerificationChallenge::factory()->create([
+            'purpose' => VerificationPurpose::Registration,
+            'mobile' => '09123456789',
+            'verification_code' => '123456',
+            'expires_at' => now()->addMinutes(2),
+            'attempts' => 4,
+            'verified_at' => null,
+        ]);
+
+        $service = app(VerificationChallengeService::class);
+
+        $this->expectException(InvalidVerificationCodeException::class);
+
+        try {
+            $service->verify(
+                purpose: VerificationPurpose::Registration,
+                mobile: '09123456789',
+                verificationCode: '654321',
+            );
+        } finally {
+            $this->assertDatabaseHas('verification_challenges', [
+                'id' => $challenge->id,
+                'attempts' => 5,
+                'verified_at' => null,
+            ]);
+        }
+    }
+    public function test_verify_throws_when_challenge_is_already_verified(): void
+    {
+        VerificationChallenge::factory()->create([
+            'purpose' => VerificationPurpose::Registration,
+            'mobile' => '09123456789',
+            'verification_code' => '123456',
+            'expires_at' => now()->addMinutes(2),
+            'attempts' => 0,
+            'verified_at' => now(),
+        ]);
+
+        $service = app(VerificationChallengeService::class);
+
+        $this->expectException(
+            VerificationChallengeNotFoundException::class
+        );
+
+        $service->verify(
+            purpose: VerificationPurpose::Registration,
+            mobile: '09123456789',
+            verificationCode: '123456',
+        );
+    }
+    public function test_verify_does_not_accept_challenge_from_another_purpose(): void
+    {
+        VerificationChallenge::factory()->create([
+            'purpose' => VerificationPurpose::Registration,
+            'mobile' => '09123456789',
+            'verification_code' => '123456',
+            'expires_at' => now()->addMinutes(2),
+            'attempts' => 0,
+            'verified_at' => null,
+        ]);
+
+        $service = app(VerificationChallengeService::class);
+
+        $this->expectException(
+            VerificationChallengeNotFoundException::class
+        );
+
+        $service->verify(
+            purpose: VerificationPurpose::PasswordReset,
+            mobile: '09123456789',
+            verificationCode: '123456',
+        );
+    }
+}

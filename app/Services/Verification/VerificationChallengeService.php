@@ -6,10 +6,14 @@ use App\Contracts\SmsGateway;
 use App\Enums\NationalityType;
 use App\Enums\VerificationPurpose;
 use App\Exceptions\Verification\ActiveVerificationChallengeException;
+use App\Exceptions\Verification\ExpiredVerificationChallengeException;
+use App\Exceptions\Verification\InvalidVerificationCodeException;
 use App\Exceptions\Verification\SmsDeliveryException;
 use App\Exceptions\Verification\SmsRateLimitException;
+use App\Exceptions\Verification\VerificationAttemptsExceededException;
 use App\Exceptions\Verification\VerificationChallengeNotFoundException;
 use App\Models\VerificationChallenge;
+use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
 
 class VerificationChallengeService
@@ -27,7 +31,6 @@ class VerificationChallengeService
     public function __construct(
         private readonly SmsGateway $smsGateway,
     ) {}
-
 
     public function issue(
         VerificationPurpose $purpose,
@@ -113,12 +116,45 @@ class VerificationChallengeService
                 ip: $ip,
             );
 
-
             return $challenge;
         });
         $this->dispatchSms($challenge);
 
         return $challenge;
+    }
+
+    public function verify(
+        VerificationPurpose $purpose,
+        string $mobile,
+        string $verificationCode,
+    ): VerificationChallenge {
+        $challenge = $this->findLatestChallenge($purpose, $mobile);
+
+        if (! $challenge) {
+            throw new VerificationChallengeNotFoundException;
+        }
+
+        if ($challenge->expires_at->isPast()) {
+            throw new ExpiredVerificationChallengeException;
+        }
+
+        if (
+            $challenge->attempts >= config('verification.otp.max_attempts')
+        ) {
+            throw new VerificationAttemptsExceededException;
+        }
+
+        if (! hash_equals($challenge->verification_code, $verificationCode)) {
+            $challenge->increment('attempts');
+
+            throw new InvalidVerificationCodeException;
+        }
+
+        $challenge->update([
+            'verified_at' => now(),
+        ]);
+
+        return $challenge->fresh();
     }
 
     /**
@@ -207,7 +243,7 @@ class VerificationChallengeService
     /**
      * Generate OTP expiration timestamp.
      */
-    private function expiresAt(): \Carbon\CarbonInterface
+    private function expiresAt(): CarbonInterface
     {
         return now()->addMinutes(
             config('verification.otp.expires_in')
@@ -227,7 +263,6 @@ class VerificationChallengeService
 
         return (string) random_int($min, $max);
     }
-
 
     private function ensureCanSendSms(
         VerificationPurpose $purpose,
@@ -250,6 +285,7 @@ class VerificationChallengeService
             throw new SmsRateLimitException;
         }
     }
+
     private function ensureCanSendByFingerprint(
         VerificationPurpose $purpose,
         ?string $fingerprint,
@@ -275,6 +311,7 @@ class VerificationChallengeService
             throw new SmsRateLimitException;
         }
     }
+
     private function ensureCanSendByIp(
         VerificationPurpose $purpose,
         ?string $ip,
@@ -300,5 +337,4 @@ class VerificationChallengeService
             throw new SmsRateLimitException;
         }
     }
-
 }
