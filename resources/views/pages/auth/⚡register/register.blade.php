@@ -93,8 +93,17 @@
                 color="teal"
                 class="w-full cursor-pointer"
                 data-test="register-user-button"
+                wire:loading.attr="disabled"
+                wire:target="continueRegister"
+                :loading="false"
             >
-                {{ __('ادامه ثبت نام') }}
+        <span wire:loading.remove wire:target="continueRegister">
+            {{ __('ادامه ثبت نام') }}
+        </span>
+
+                <span wire:loading wire:target="continueRegister">
+            {{ __('منتظر بمانید، در حال پردازش  ... !') }}
+        </span>
             </flux:button>
         </div>
     </form>

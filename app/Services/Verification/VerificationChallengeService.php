@@ -150,10 +150,6 @@ class VerificationChallengeService
             throw new InvalidVerificationCodeException;
         }
 
-        $challenge->update([
-            'verified_at' => now(),
-        ]);
-
         return $challenge->fresh();
     }
 

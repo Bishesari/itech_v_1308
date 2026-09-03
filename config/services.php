@@ -34,5 +34,10 @@ return [
             'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
         ],
     ],
+    'pars_green' => [
+        'url' => env('PARSGREEN_API_URL', 'https://sms.parsgreen.ir'),
+        'api_key' => env('PARSGREEN_API_KEY'),
+        'otp_template_id' => (int) env('PARSGREEN_OTP_TEMPLATE_ID', 0),
+    ],
 
 ];

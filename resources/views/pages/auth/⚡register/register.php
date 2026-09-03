@@ -11,6 +11,7 @@ use App\Exceptions\Verification\VerificationChallengeNotFoundException;
 use App\Rules\NationalCode;
 use App\Rules\NotIranianNationalCode;
 use App\Rules\PersianName;
+use App\Services\Registration\RegistrationService;
 use App\Services\Verification\VerificationChallengeService;
 use App\Support\Digits;
 use App\Support\PersianText;
@@ -198,7 +199,7 @@ class extends Component
     }
 
     public function verifyOtp(
-        VerificationChallengeService $service
+        RegistrationService $registrationService
     ): void {
         $this->normalizeField('otp');
 
@@ -210,7 +211,7 @@ class extends Component
         ]);
 
         try {
-            $service->verify(
+            $user = $registrationService->complete(
                 purpose: VerificationPurpose::Registration,
                 mobile: $this->mobile,
                 verificationCode: $this->otp,
@@ -250,6 +251,10 @@ class extends Component
         $this->otp = '';
         $this->otp_expires_at = null;
 
+        Auth::login($user);
+        $this->modal('verify-otp')->close();
+
+        $this->redirectRoute('dashboard');
         // مرحله ثبت نهایی کاربر بعداً اینجا قرار می‌گیرد.
     }
 };

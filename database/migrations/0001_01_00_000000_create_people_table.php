@@ -21,8 +21,8 @@ return new class extends Migration
             $table->string('identity', 20)->unique();
 
             $table->boolean('gender')->nullable();
-            $table->string('f_name_fa', 30)->nullable();
-            $table->string('l_name_fa', 40)->nullable();
+            $table->string('first_name_fa', 30)->nullable();
+            $table->string('last_name_fa', 40)->nullable();
             $table->string('nickname', 30)->nullable();
 
             $table->timestamps();
