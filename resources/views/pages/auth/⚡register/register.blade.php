@@ -97,13 +97,13 @@
                 wire:target="continueRegister"
                 :loading="false"
             >
-        <span wire:loading.remove wire:target="continueRegister">
-            {{ __('ادامه ثبت نام') }}
-        </span>
+                <span wire:loading.remove wire:target="continueRegister">
+                    {{ __('ادامه ثبت نام') }}
+                </span>
 
                 <span wire:loading wire:target="continueRegister">
-            {{ __('منتظر بمانید، در حال پردازش  ... !') }}
-        </span>
+                    {{ __('منتظر بمانید، در حال پردازش  ... !') }}
+                </span>
             </flux:button>
         </div>
     </form>

@@ -3,7 +3,7 @@
     'submitRoute' => 'passkey.login',
     'label' => __('Sign in with a passkey'),
     'loadingLabel' => __('Authenticating...'),
-    'separator' => __('Or continue with email'),
+    'separator' => __('با نام کاربری و کلمه عبور'),
 ])
 
 @assets
@@ -50,7 +50,7 @@
                 <flux:button
                     variant="outline"
                     icon="finger-print"
-                    class="w-full"
+                    class="w-full cursor-pointer"
                     x-on:click="verify()"
                     x-bind:disabled="loading"
                 >
@@ -61,7 +61,7 @@
                    class="text-sm text-center text-red-600 dark:text-red-400"></p>
             </div>
 
-            <div class="relative my-6">
+            <div class="relative mt-6">
                 <div class="absolute inset-0 flex items-center">
                     <div class="w-full border-t border-zinc-200 dark:border-zinc-700"></div>
                 </div>
