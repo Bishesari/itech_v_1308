@@ -10,22 +10,24 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
-
 #[Fillable(['nationality_type', 'identity', 'gender', 'first_name_fa', 'last_name_fa', 'nickname'])]
 
 class Person extends Model
 {
-    Use HasFactory;
+    use HasFactory;
+
     protected function casts(): array
     {
         return [
             'nationality_type' => NationalityType::class,
         ];
     }
+
     public function user(): HasOne
     {
         return $this->hasOne(User::class);
     }
+
     public function mobiles(): BelongsToMany
     {
         return $this->belongsToMany(Mobile::class)
