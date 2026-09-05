@@ -3,19 +3,38 @@
     <head>
         @include('partials.head')
     </head>
+    @php
+        use App\Services\Authorization\CurrentRoleContextService;
+
+        $context = app(CurrentRoleContextService::class)->current(
+            auth()->user()->person
+        );
+    @endphp
+
     <body class="min-h-screen bg-white dark:bg-zinc-800">
         <flux:sidebar sticky collapsible="mobile" class="border-e border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900">
             <flux:sidebar.header>
-                <x-app-logo :sidebar="true" href="{{ route('dashboard') }}" wire:navigate />
+
+                <flux:sidebar.brand href="{{route('home')}}" wire:navigate>
+                    <x-slot name="logo" class="size-16">
+                        <x-logo class="text-zinc-700 dark:text-zinc-300"/>
+                    </x-slot>
+                </flux:sidebar.brand>
+                @if ($context?->branch)
+                    <flux:badge class="text-xs font-light!">
+                        {{__('شعبه:')}}
+                        {{ $context->branch->short_name }}
+                    </flux:badge>
+                @endif
+
                 <flux:sidebar.collapse class="lg:hidden" />
             </flux:sidebar.header>
 
             <flux:sidebar.nav>
-                <flux:sidebar.group :heading="__('Platform')" class="grid">
-                    <flux:sidebar.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>
-                        {{ __('Dashboard') }}
-                    </flux:sidebar.item>
-                </flux:sidebar.group>
+                @if ($context)
+                    @includeIf('partials.side-bars.' . $context->role->code)
+{{--                    {{$context->role->code}}--}}
+                @endif
             </flux:sidebar.nav>
 
             <flux:spacer />

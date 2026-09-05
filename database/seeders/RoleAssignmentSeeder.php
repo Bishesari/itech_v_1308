@@ -8,7 +8,6 @@ use App\Models\Membership;
 use App\Models\Person;
 use App\Models\Role;
 use App\Models\RoleAssignment;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class RoleAssignmentSeeder extends Seeder
@@ -39,6 +38,11 @@ class RoleAssignmentSeeder extends Seeder
             RoleCode::Student->value
         )->firstOrFail();
 
+        $siteAdminRole = Role::where(
+            'code',
+            RoleCode::SiteAdmin->value
+        )->firstOrFail();
+
         $person1CentralMembership = Membership::where('person_id', $person1->id)
             ->where('branch_id', $centralBranch->id)
             ->firstOrFail();
@@ -63,6 +67,16 @@ class RoleAssignmentSeeder extends Seeder
                 'person_id' => $person1->id,
                 'role_id' => $instructorRole->id,
                 'membership_id' => $person1CentralMembership->id,
+            ],
+            [
+                'is_active' => true,
+            ]
+        );
+        RoleAssignment::updateOrCreate(
+            [
+                'person_id' => $person1->id,
+                'role_id' => $siteAdminRole->id,
+                'membership_id' => null,
             ],
             [
                 'is_active' => true,
