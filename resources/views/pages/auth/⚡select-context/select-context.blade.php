@@ -1,48 +1,67 @@
-<div class="mx-auto w-full max-w-lg">
+<div class="flex flex-col gap-3 mb-7">
 
-    <div class="mb-6 text-center">
-        <flux:heading size="xl">
-            انتخاب نقش
-        </flux:heading>
+    {{-- Header --}}
+    <div class="space-y-2 text-center">
+        <h1 class="text-xl font-bold text-gray-800 dark:text-gray-200">
+            {{ __('انتخاب نقش کاربری') }}
+        </h1>
 
-        <flux:text class="mt-2">
-            برای ورود، نقش و شعبه موردنظر خود را انتخاب کنید.
-        </flux:text>
+        <p class="text-sm text-gray-500 dark:text-gray-400">
+            {{ __('برای ورود، یکی از نقش‌های زیر را انتخاب کنید.') }}
+        </p>
     </div>
 
-    <div class="flex flex-col gap-3">
-        @foreach ($assignments as $assignment)
-            <button
-                type="button"
-                wire:click="select({{ $assignment->id }})"
-                wire:loading.attr="disabled"
-                wire:target="select({{ $assignment->id }})"
-                class="w-full text-start"
-            >
-                <flux:card class="transition hover:ring-2 hover:ring-primary">
-                    <div class="flex items-center justify-between gap-4">
+    {{-- Roles --}}
+    @forelse($assignments as $assignment)
 
-                        <div>
-                            <flux:heading size="sm">
-                                {{ $assignment->role->name }}
-                            </flux:heading>
+        <flux:callout
+            wire:click="select({{ $assignment->id }})"
+            color="{{ $selectedAssignmentId == $assignment->id
+                ? ($assignment->role->color ?? 'indigo')
+                : 'zinc' }}"
+            class="cursor-pointer transition"
+        >
 
-                            @if ($assignment->membership?->branch)
-                                <flux:text size="sm" class="mt-1">
-                                    {{ $assignment->membership->branch->short_name }}
-                                </flux:text>
-                            @else
-                                <flux:text size="sm" class="mt-1">
-                                    سطح آموزشگاه
-                                </flux:text>
-                            @endif
-                        </div>
+            <flux:callout.heading class="flex items-center justify-between">
 
-                        <flux:icon.chevron-left class="size-5" />
-                    </div>
-                </flux:card>
-            </button>
-        @endforeach
-    </div>
+                <span class="font-medium">
+                    {{ $assignment->role->name }}
+                </span>
+
+                @if($assignment->membership)
+                    <span class="text-xs font-light">{{__('شعبه : ')}} {{ $assignment->membership->branch->short_name }}</span>
+                @endif
+
+            </flux:callout.heading>
+
+        </flux:callout>
+
+    @empty
+
+        <p class="text-center text-gray-500 dark:text-gray-400">
+            {{ __('شما هیچ نقش فعالی ندارید.') }}
+        </p>
+
+    @endforelse
+
+    {{-- Validation --}}
+    @error('selectedAssignmentId')
+    <p class="text-center text-sm text-red-500">
+        {{ $message }}
+    </p>
+    @enderror
+
+    {{-- Continue --}}
+    @if($selectedAssignmentId)
+
+        <flux:button
+            wire:click="confirm"
+            variant="primary"
+            color="{{ $selectedAssignment?->role->color ?? 'indigo' }}"
+            class="relative w-full cursor-pointer py-2 text-sm font-medium"
+        >
+            <span>{{ __('ادامه با نقش انتخابی') }}</span>
+        </flux:button>
+    @endif
 
 </div>

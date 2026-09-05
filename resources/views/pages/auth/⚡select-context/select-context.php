@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\RoleAssignment;
 use App\Services\Authorization\CurrentRoleContextService;
 use Illuminate\Database\Eloquent\Collection;
 use Livewire\Attributes\Layout;
@@ -13,6 +14,10 @@ class extends Component
 {
     public Collection $assignments;
 
+    public ?int $selectedAssignmentId = null;
+
+    public ?RoleAssignment $selectedAssignment = null;
+
     public function mount(CurrentRoleContextService $contextService): void
     {
         $this->assignments = $contextService->available(
@@ -20,13 +25,23 @@ class extends Component
         );
     }
 
-    public function select(
-        int $roleAssignmentId,
-        CurrentRoleContextService $contextService,
-    ) {
-        $contextService->select(
+    public function select(int $assignmentId): void
+    {
+        $this->selectedAssignmentId = $assignmentId;
+
+        $this->selectedAssignment = $this->assignments
+            ->firstWhere('id', $assignmentId);
+    }
+
+    public function confirm(CurrentRoleContextService $service): void
+    {
+        $this->validate([
+            'selectedAssignmentId' => ['required', 'integer'],
+        ]);
+
+        $service->select(
             auth()->user()->person,
-            $roleAssignmentId,
+            $this->selectedAssignmentId,
         );
 
         $this->redirectRoute('dashboard');

@@ -22,6 +22,7 @@ return new class extends Migration
             $table->string('scope');
 
             $table->text('description')->nullable();
+            $table->string('color', 15)->nullable();
 
             $table->boolean('is_active')->default(true);
 
