@@ -56,6 +56,7 @@
 
         <flux:button
             wire:click="confirm"
+            wire:target="select"
             variant="primary"
             color="{{ $selectedAssignment?->role->color ?? 'indigo' }}"
             class="relative w-full cursor-pointer py-2 text-sm font-medium"
