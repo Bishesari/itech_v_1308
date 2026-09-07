@@ -15,7 +15,7 @@ class UserSeeder extends Seeder
     {
         User::insert([
             ['person_id' => 1, 'username' => 'Yasser', 'password' => Hash::make('123')],
-            ['person_id' => 2, 'username' => 'Neda', 'password' => Hash::make('123')],
+//            ['person_id' => 2, 'username' => 'Neda', 'password' => Hash::make('123')],
         ]);
     }
 }

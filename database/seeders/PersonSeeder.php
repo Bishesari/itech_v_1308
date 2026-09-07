@@ -22,22 +22,22 @@ class PersonSeeder extends Seeder
             'updated_at' => now(),
         ]);
 
-        Person::create([
-            'nationality_type' => NationalityType::Iranian->value,
-            'identity' => '3500984886',
-            'first_name_fa' => 'ندا',
-            'last_name_fa' => 'بخشی زاده',
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
-        Person::create([
-            'nationality_type' => NationalityType::Iranian->value,
-            'identity' => '1020304050',
-            'first_name_fa' => 'رز',
-            'last_name_fa' => 'بیشه سری',
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+//        Person::create([
+//            'nationality_type' => NationalityType::Iranian->value,
+//            'identity' => '3500984886',
+//            'first_name_fa' => 'ندا',
+//            'last_name_fa' => 'بخشی زاده',
+//            'created_at' => now(),
+//            'updated_at' => now(),
+//        ]);
+//
+//        Person::create([
+//            'nationality_type' => NationalityType::Iranian->value,
+//            'identity' => '1020304050',
+//            'first_name_fa' => 'رز',
+//            'last_name_fa' => 'بیشه سری',
+//            'created_at' => now(),
+//            'updated_at' => now(),
+//        ]);
     }
 }
