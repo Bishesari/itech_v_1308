@@ -33,7 +33,6 @@
             <flux:sidebar.nav>
                 @if ($context)
                     @includeIf('partials.side-bars.' . $context->role->code)
-{{--                    {{$context->role->code}}--}}
                 @endif
             </flux:sidebar.nav>
 
@@ -49,7 +48,8 @@
                 </flux:sidebar.item>
             </flux:sidebar.nav>
 
-            <x-desktop-user-menu class="hidden lg:block" :name="auth()->user()->name" />
+            <x-desktop-user-menu class="hidden lg:block" />
+
         </flux:sidebar>
 
         <!-- Mobile User Menu -->
@@ -60,7 +60,7 @@
 
             <flux:dropdown position="top" align="end">
                 <flux:profile
-                    :initials="auth()->user()->initials()"
+                    :initials="auth()->user()->person->initials()"
                     icon-trailing="chevron-down"
                 />
 
@@ -69,13 +69,13 @@
                         <div class="p-0 text-sm font-normal">
                             <div class="flex items-center gap-2 px-1 py-1.5 text-start text-sm">
                                 <flux:avatar
-                                    :name="auth()->user()->name"
-                                    :initials="auth()->user()->initials()"
+                                    :name="auth()->user()->person->fullName()"
+                                    :initials="auth()->user()->person->initials()"
                                 />
 
                                 <div class="grid flex-1 text-start text-sm leading-tight">
-                                    <flux:heading class="truncate">{{ auth()->user()->name }}</flux:heading>
-                                    <flux:text class="truncate">{{ auth()->user()->email }}</flux:text>
+                                    <flux:heading class="truncate">{{ auth()->user()->person->fullName() }}</flux:heading>
+                                    <flux:text class="truncate">{{ auth()->user()->username }}</flux:text>
                                 </div>
                             </div>
                         </div>
@@ -85,7 +85,7 @@
 
                     <flux:menu.radio.group>
                         <flux:menu.item :href="route('profile.edit')" icon="cog" wire:navigate>
-                            {{ __('Settings') }}
+                            {{ __('تنظیمات') }}
                         </flux:menu.item>
                     </flux:menu.radio.group>
 
@@ -100,7 +100,7 @@
                             class="w-full cursor-pointer"
                             data-test="logout-button"
                         >
-                            {{ __('Log out') }}
+                            {{ __('خروج از سیستم') }}
                         </flux:menu.item>
                     </form>
                 </flux:menu>

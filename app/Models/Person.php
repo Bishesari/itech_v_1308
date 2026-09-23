@@ -43,4 +43,16 @@ class Person extends Model
     {
         return $this->hasMany(RoleAssignment::class);
     }
+
+    public function fullName(): string
+    {
+        return trim($this->first_name_fa.' '.$this->last_name_fa);
+    }
+
+    public function initials(): string
+    {
+        return mb_substr($this->first_name_fa, 0, 1)
+            .' '
+            .mb_substr($this->last_name_fa, 0, 1);
+    }
 }

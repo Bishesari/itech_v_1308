@@ -15,7 +15,7 @@ class MembershipSeeder extends Seeder
     public function run(): void
     {
         $person1 = Person::where('identity', '2063531218')->firstOrFail();
-//        $person2 = Person::where('identity', '3500984886')->firstOrFail();
+        $person2 = Person::where('identity', '3500984886')->firstOrFail();
 
         $centralBranch = Branch::where('code', 'BR00001')->firstOrFail();
         $westBranch = Branch::where('code', 'BR00002')->firstOrFail();
