@@ -17,7 +17,7 @@
 
                 <flux:sidebar.brand href="{{route('home')}}" wire:navigate>
                     <x-slot name="logo" class="size-16">
-                        <x-logo class="text-zinc-700 dark:text-zinc-300"/>
+                        <x-logo class="text-zinc-700 dark:text-zinc-300 animate-pulse" />
                     </x-slot>
                 </flux:sidebar.brand>
                 @if ($context?->branch)
