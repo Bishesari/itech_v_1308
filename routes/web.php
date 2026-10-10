@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Route;
 Route::view('/', 'welcome')->name('home');
 
 Route::middleware('auth')->group(function () {
+
     Route::get('dashboard', function (CurrentRoleContextService $contextService) {
         $context = $contextService->current(
             auth()->user()->person
